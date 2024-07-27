@@ -22,7 +22,7 @@ export default function Card(props: CardProps) {
       </section>
       <section className="flex flex-col gap-1">
         <h2 className="text-2xl font-semibold">{props.course}</h2>
-        <p className="text-xs text-gray-500">{props.discription}</p>
+        {/* <p className="text-xs text-gray-500">{props.discription}</p> */}
       </section>
     </CardContent>
   );

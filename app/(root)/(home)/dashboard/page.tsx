@@ -1,143 +1,146 @@
-"use client"
-import React from 'react'
-/** @format */
-
+"use client";
+import React, { useEffect, useState } from "react";
 import PageTitle from "@/components/ui/PageTitle";
-import Image from "next/image";
-import { DollarSign, Users, CreditCard, Activity } from "lucide-react";
-import Card, { CardContent, CardProps } from "@/components/ui/card";
+import { CreditCard } from "lucide-react";
+import Card from "@/components/ui/card";
 import BarChart from "@/components/ui/BarChart";
-import SalesCard, { CourseProps } from "@/components/ui/SalesCard";
+import SalesCard from "@/components/ui/SalesCard";
+import axios from 'axios';
+import { usePathname, useSearchParams } from 'next/navigation';
 
+interface Course {
+  id: number;
+  courseName: string;
+  courseCode: string;
+}
 
+interface Student {
+  id: number;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  department: {
+    id: number;
+  };
+  email: string;
+  studentCourses?: Course[];
+}
 
-const cardData: CardProps[] = [
-  {
-    code: "code I",
-    course: "Course 1",
-    discription: "+20.1% from last month",
-    icon: Users
-  },
-  {
-    code: "code II",
-    course: "Course 2",
-    discription: "+180.1% from last month",
-    icon: Users
-  },
-  {
-    code: "code III",
-    course: "Course 3",
-    discription: "+19% from last month",
-    icon: CreditCard
-  },
-  {
-    code: "code V",
-    course: "Course 5",
-    discription: "+201 since last hour",
-    icon: Activity
-  },
-
-  {
-    code: "code VI",
-    course: "Course 6",
-    discription: "+201 since last hour",
-    icon: Activity
-  },
-
-  {
-    code: "code VII",
-    course: "Course 7",
-    discription: "+201 since last hour",
-    icon: Activity
-  }
-];
-
-const uesrSalesData: CourseProps[] = [
+const userSalesData = [
   {
     name: "Olivia Martin",
     email: "olivia.martin@email.com",
-    
   },
   {
     name: "Jackson Lee",
-    email: "isabella.nguyen@email.com",
-    
+    email: "jackson.lee@email.com",
   },
   {
     name: "Isabella Nguyen",
     email: "isabella.nguyen@email.com",
-    
   },
   {
     name: "William Kim",
-    email: "will@email.com",
-    
+    email: "william.kim@email.com",
   },
   {
     name: "Sofia Davis",
     email: "sofia.davis@email.com",
-   
   }
 ];
 
+const Dashboard: React.FC = () => {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const studentId = searchParams.get('studentId');
+  let studentIdNumber = typeof studentId === 'string' ? parseInt(studentId, 10) : NaN;
+  const [student, setStudent] = useState<Student | null>(null);
+  const [studentCourses, setStudentCourses] = useState<Course[]>([]);
 
-const Dashboard = () => {
+  useEffect(() => {
 
- 
+    if (isNaN(studentIdNumber) || studentIdNumber <= 0) {
+      const storedStudentData = localStorage.getItem("studentData");
+      if (storedStudentData) {
+        const studentData = JSON.parse(storedStudentData);
+        studentIdNumber=studentData.id;
+        setStudent(studentData);
+        setStudentCourses(studentData.studentCourses);
+        
+      }else{
+      console.error("Invalid student ID");
+      return;}
+    
+    }else{  const fetchStudentData = async () => {
+      try {
+        // Fetch student data
+        const studentResponse = await axios.get<Student>(`http://localhost:8001/api/students/${studentIdNumber}`);
+        const studentData = studentResponse.data;
+        setStudent(studentData);
+        localStorage.setItem("studentData", JSON.stringify(studentData)); // Save student data to local storage
+
+        // Fetch student courses
+        const coursesResponse = await axios.get<Course[]>(`http://localhost:8001/api/student-courses/student/${studentIdNumber}`);
+        setStudentCourses(coursesResponse.data);
+
+      } catch (error) {
+        console.error("Error fetching student data or courses", error);
+      }
+    };
+
+    fetchStudentData();}
+  }, [studentIdNumber]);
+
+  // if (isNaN(studentIdNumber) || studentIdNumber <= 0 && !localStorage.getItem("studentData")) {
+  //   return <div>Invalid Student ID</div>;
+  // }
+
+  if (!student) {
+    return <div>Loading...</div>;
+  }
+
+  const { firstName } = student;
 
   return (
-    <div className='m-20 flex flex-col w-full'>
-      <h1 className=' text-[36px] bg-gradient-to-r from-red-400 via-indigo-500 to-blue-600
-        inline-block text-transparent bg-clip-text font-bold'>
-        Hello, First Name
+    <div className="m-20 flex flex-col w-full">
+      <h1 className="text-[36px] bg-gradient-to-r from-red-400 via-indigo-500 to-blue-600 inline-block text-transparent bg-clip-text font-bold">
+        Hello, {firstName}
       </h1>
 
-      
-     
-
-      <PageTitle title="Dashboard" className='text-gray-700'/>
+      <PageTitle title="Dashboard" className="text-gray-700" />
       <section className="grid mb-10 w-full grid-cols-1 gap-4 gap-x-8 transition-all sm:grid-cols-2 xl:grid-cols-4">
-        {cardData.map((d, i) => (
-         
-          <Card
-            key={i}
-            course={d.course}
-            discription={d.discription}
-            icon={d.icon}
-            code={d.code}
-          />
-          
-        ))}
+        {studentCourses.length > 0 ? (
+          studentCourses.map((course) => (
+            <Card
+              key={course.id}
+              course={course.courseName}
+              discription=""
+              icon={CreditCard} // Change icon as needed
+              code={course.courseCode}
+            />
+          ))
+        ) : (
+          <p>No registered courses</p>
+        )}
       </section>
-      <section className="grid grid-cols-1  gap-4 transition-all lg:grid-cols-2">
-        <CardContent>
+      <section className="grid grid-cols-1 gap-4 transition-all lg:grid-cols-2">
+        <div className="p-4">
           <p className="p-4 font-semibold">Progress</p>
-
-          <BarChart/>
-        </CardContent>
-        <CardContent className="flex justify-between gap-4">
+          <BarChart />
+        </div>
+        <div className="flex justify-between gap-4">
           <section>
             <p>Contact Tutors</p>
-            <p className="text-sm text-gray-400">
-              Five Tutors Available
-            </p>
+            <p className="text-sm text-gray-400">Five Tutors Available</p>
           </section>
-          {uesrSalesData.map((d, i) => (
-            <SalesCard
-              key={i}
-              email={d.email}
-              name={d.name}
-              
-            />
+          {userSalesData.map((d, i) => (
+            <SalesCard key={i} email={d.email} name={d.name} />
           ))}
-        </CardContent>
-
-        {/*  */}
+        </div>
       </section>
-
-
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
